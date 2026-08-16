@@ -59,7 +59,7 @@ let lastVideoTime = -1;
 
 
 // =====================================================
-// FINGER INFORMATION
+// FINGERS
 // =====================================================
 
 const fingers = {
@@ -88,17 +88,41 @@ const fingers = {
 
 
 // =====================================================
-// TOUCH STATE
+// TOUCH STATES
 // =====================================================
 
 const fingerState = {
 
-    index: false,
-    middle: false,
-    ring: false,
-    pinky: false
+    index: {
+        touching: false,
+        frames: 0
+    },
+
+    middle: {
+        touching: false,
+        frames: 0
+    },
+
+    ring: {
+        touching: false,
+        frames: 0
+    },
+
+    pinky: {
+        touching: false,
+        frames: 0
+    }
 
 };
+
+
+// =====================================================
+// SMOOTHING
+// =====================================================
+
+const previousPositions = {};
+
+const SMOOTHING = 0.65;
 
 
 // =====================================================
@@ -115,25 +139,28 @@ let sentenceWords = [];
 let voiceEnabled = false;
 
 
-// Prevent accidental double activations
+// =====================================================
+// ACTIVATION
+// =====================================================
 
 let lastActivation = 0;
 
-const ACTIVATION_COOLDOWN = 400;
+const ACTIVATION_COOLDOWN = 500;
+
+
+// A finger must remain touching for
+// several frames before activating.
+
+const REQUIRED_TOUCH_FRAMES = 4;
 
 
 // =====================================================
-// INITIALIZE MEDIAPIPE
+// INITIALIZE
 // =====================================================
 
 async function initialize() {
 
     try {
-
-        console.log(
-            "Loading hand tracking..."
-        );
-
 
         const vision =
             await FilesetResolver.forVisionTasks(
@@ -158,21 +185,16 @@ async function initialize() {
                     numHands: 1,
 
                     minHandDetectionConfidence:
-                        0.5,
+                        0.6,
 
                     minHandPresenceConfidence:
-                        0.5,
+                        0.6,
 
                     minTrackingConfidence:
-                        0.5
+                        0.6
 
                 }
             );
-
-
-        console.log(
-            "Hand tracking loaded!"
-        );
 
 
         await startCamera();
@@ -181,18 +203,14 @@ async function initialize() {
 
     catch (error) {
 
-        console.error(
-            "Could not initialize:",
-            error
-        );
-
+        console.error(error);
 
         cameraMessage.innerHTML = `
             <p>
                 Camera couldn't start.
                 <br><br>
-                Please make sure you allowed
-                camera access and reload the page.
+                Please allow camera access
+                and reload the page.
             </p>
         `;
 
@@ -202,7 +220,7 @@ async function initialize() {
 
 
 // =====================================================
-// START CAMERA
+// CAMERA
 // =====================================================
 
 async function startCamera() {
@@ -222,6 +240,11 @@ async function startCamera() {
 
                     height: {
                         ideal: 720
+                    },
+
+                    frameRate: {
+                        ideal: 30,
+                        max: 30
                     }
 
                 },
@@ -252,16 +275,11 @@ async function startCamera() {
             }
         );
 
-
     }
 
     catch (error) {
 
-        console.error(
-            "Camera error:",
-            error
-        );
-
+        console.error(error);
 
         cameraMessage.innerHTML = `
             <p>
@@ -276,7 +294,7 @@ async function startCamera() {
 
 
 // =====================================================
-// DISTANCE BETWEEN TWO LANDMARKS
+// DISTANCE
 // =====================================================
 
 function distance(a, b) {
@@ -301,37 +319,78 @@ function distance(a, b) {
 
 
 // =====================================================
-// CHECK IF FINGER IS TOUCHING THUMB
+// MIRROR LANDMARK
 // =====================================================
 
-function isTouching(
-    thumb,
-    fingertip
-) {
+function mirrorPoint(point) {
 
-    /*
-        Lower number =
-        requires more precise touch.
+    return {
 
-        Higher number =
-        easier to activate.
-    */
+        x: 1 - point.x,
 
-    const TOUCH_THRESHOLD = 0.075;
+        y: point.y,
 
+        z: point.z
 
-    return (
-        distance(
-            thumb,
-            fingertip
-        ) < TOUCH_THRESHOLD
-    );
+    };
 
 }
 
 
 // =====================================================
-// DRAW A CIRCLE
+// SMOOTH POINT
+// =====================================================
+
+function smoothPoint(
+    point,
+    id
+) {
+
+    if (!previousPositions[id]) {
+
+        previousPositions[id] = {
+            x: point.x,
+            y: point.y,
+            z: point.z
+        };
+
+        return previousPositions[id];
+
+    }
+
+
+    const previous =
+        previousPositions[id];
+
+
+    const smoothed = {
+
+        x:
+            previous.x * SMOOTHING +
+            point.x * (1 - SMOOTHING),
+
+        y:
+            previous.y * SMOOTHING +
+            point.y * (1 - SMOOTHING),
+
+        z:
+            previous.z * SMOOTHING +
+            point.z * (1 - SMOOTHING)
+
+    };
+
+
+    previousPositions[id] =
+        smoothed;
+
+
+    return smoothed;
+
+}
+
+
+// =====================================================
+// DRAW CIRCLE
 // =====================================================
 
 function drawCircle(
@@ -358,7 +417,7 @@ function drawCircle(
 
 
 // =====================================================
-// DRAW A LINE
+// DRAW LINE
 // =====================================================
 
 function drawLine(
@@ -384,44 +443,38 @@ function drawLine(
 
 
 // =====================================================
-// DRAW HAND SKELETON
+// DRAW HAND
 // =====================================================
 
 function drawHand(hand) {
 
     const connections = [
 
-        // Thumb
         [0, 1],
         [1, 2],
         [2, 3],
         [3, 4],
 
-        // Index
         [0, 5],
         [5, 6],
         [6, 7],
         [7, 8],
 
-        // Middle
         [5, 9],
         [9, 10],
         [10, 11],
         [11, 12],
 
-        // Ring
         [9, 13],
         [13, 14],
         [14, 15],
         [15, 16],
 
-        // Pinky
         [13, 17],
         [17, 18],
         [18, 19],
         [19, 20],
 
-        // Palm
         [0, 17]
 
     ];
@@ -430,7 +483,7 @@ function drawHand(hand) {
     ctx.lineWidth = 2;
 
     ctx.strokeStyle =
-        "rgba(255,255,255,0.35)";
+        "rgba(255,255,255,0.28)";
 
 
     for (
@@ -446,10 +499,6 @@ function drawHand(hand) {
     }
 
 
-    /*
-        Small landmark dots.
-    */
-
     for (
         const point
         of hand
@@ -457,8 +506,8 @@ function drawHand(hand) {
 
         drawCircle(
             point,
-            3,
-            "rgba(255,255,255,0.6)"
+            2.5,
+            "rgba(255,255,255,0.5)"
         );
 
     }
@@ -467,7 +516,7 @@ function drawHand(hand) {
 
 
 // =====================================================
-// DRAW FINGER WORD
+// DRAW WORD
 // =====================================================
 
 function drawFingerWord(
@@ -478,6 +527,7 @@ function drawFingerWord(
 
     const x =
         point.x * canvas.width;
+
 
     const y =
         point.y * canvas.height - 40;
@@ -505,15 +555,14 @@ function drawFingerWord(
         ctx.measureText(word).width;
 
 
-    const horizontalPadding =
+    const padding =
         touching
             ? 17
             : 12;
 
 
     const width =
-        textWidth +
-        horizontalPadding * 2;
+        textWidth + padding * 2;
 
 
     const height =
@@ -525,12 +574,13 @@ function drawFingerWord(
     const left =
         x - width / 2;
 
+
     const top =
         y - height / 2;
 
 
     /*
-        Activated words get a glow.
+        Glow when touching.
     */
 
     if (touching) {
@@ -538,14 +588,10 @@ function drawFingerWord(
         ctx.shadowColor =
             "rgba(255,111,145,0.65)";
 
-        ctx.shadowBlur = 22;
+        ctx.shadowBlur = 20;
 
     }
 
-
-    /*
-        Rounded bubble.
-    */
 
     drawRoundedRectangle(
         left,
@@ -659,7 +705,7 @@ function drawRoundedRectangle(
 
 
 // =====================================================
-// GET WORD FROM INPUT
+// GET WORD
 // =====================================================
 
 function getWord(
@@ -670,37 +716,85 @@ function getWord(
         inputs[fingerName].value.trim();
 
 
-    if (value.length === 0) {
-
-        return "...";
-
-    }
-
-
-    return value;
+    return value || "...";
 
 }
 
 
 // =====================================================
-// PROCESS THE HAND
+// TOUCH DETECTION
 // =====================================================
 
-function processHand(hand) {
+function isTouching(
+    thumb,
+    fingertip
+) {
 
     /*
-        Thumb tip:
-        landmark 4
+        Slightly stricter than before
+        to prevent false touches.
     */
 
+    const threshold =
+        0.065;
+
+
+    return (
+        distance(
+            thumb,
+            fingertip
+        ) < threshold
+    );
+
+}
+
+
+// =====================================================
+// PROCESS HAND
+// =====================================================
+
+function processHand(
+    rawHand
+) {
+
+    /*
+        Mirror every landmark horizontally.
+
+        This keeps the camera selfie-style
+        while keeping text readable.
+    */
+
+    const hand =
+        rawHand.map(
+            mirrorPoint
+        );
+
+
+    /*
+        Smooth all landmarks.
+    */
+
+    const smoothedHand =
+        hand.map(
+            (point, index) =>
+                smoothPoint(
+                    point,
+                    index
+                )
+        );
+
+
     const thumb =
-        hand[4];
+        smoothedHand[4];
 
 
-    drawHand(hand);
+    drawHand(
+        smoothedHand
+    );
 
 
-    let touchingAnything = false;
+    let touchingAnything =
+        false;
 
 
     for (
@@ -709,7 +803,9 @@ function processHand(hand) {
     ) {
 
         const fingertip =
-            hand[finger.tip];
+            smoothedHand[
+                finger.tip
+            ];
 
 
         const touching =
@@ -719,6 +815,12 @@ function processHand(hand) {
             );
 
 
+        const state =
+            fingerState[
+                finger.name
+            ];
+
+
         const word =
             getWord(
                 finger.name
@@ -726,46 +828,70 @@ function processHand(hand) {
 
 
         /*
-            Draw fingertip.
+            Stable touch detection.
 
-            Pink when touching.
+            If touching, increase frame count.
+            If not, reset it.
+        */
+
+        if (touching) {
+
+            state.frames++;
+
+        }
+
+        else {
+
+            state.frames = 0;
+
+        }
+
+
+        /*
+            Only consider it an actual
+            touch after several consecutive
+            frames.
+        */
+
+        const stableTouch =
+            state.frames >=
+            REQUIRED_TOUCH_FRAMES;
+
+
+        /*
+            Draw fingertip.
         */
 
         drawCircle(
             fingertip,
-            touching ? 10 : 5,
-            touching
+            stableTouch
+                ? 10
+                : 5,
+            stableTouch
                 ? "#ff6f91"
                 : "#ffffff"
         );
 
 
         /*
-            Draw the word attached
-            to the fingertip.
+            Draw word.
         */
 
         drawFingerWord(
             word,
             fingertip,
-            touching
+            stableTouch
         );
 
 
         /*
-            IMPORTANT:
-
-            Only activate when the finger
-            changes from NOT touching
-            → touching.
-
-            This prevents the same word
-            from being added every frame.
+            Activate only once when
+            stable touch begins.
         */
 
         if (
-            touching &&
-            !fingerState[finger.name]
+            stableTouch &&
+            !state.touching
         ) {
 
             activateFinger(
@@ -776,27 +902,19 @@ function processHand(hand) {
         }
 
 
-        /*
-            Save current state.
-        */
-
-        fingerState[finger.name] =
-            touching;
+        state.touching =
+            stableTouch;
 
 
-        if (touching) {
+        if (stableTouch) {
 
-            touchingAnything = true;
+            touchingAnything =
+                true;
 
         }
 
     }
 
-
-    /*
-        Hide current word when
-        no finger is touching.
-    */
 
     if (!touchingAnything) {
 
@@ -810,7 +928,7 @@ function processHand(hand) {
 
 
 // =====================================================
-// ACTIVATE A WORD
+// ACTIVATE WORD
 // =====================================================
 
 function activateFinger(
@@ -821,12 +939,6 @@ function activateFinger(
     const now =
         Date.now();
 
-
-    /*
-        Prevent tracking jitter
-        from causing accidental
-        double activations.
-    */
 
     if (
         now - lastActivation <
@@ -843,17 +955,19 @@ function activateFinger(
 
 
     /*
-        Add word to sentence.
+        Add word to phrase.
     */
 
-    sentenceWords.push(word);
+    sentenceWords.push(
+        word
+    );
 
 
     renderSentence();
 
 
     /*
-        Display the active word.
+        Show active word.
     */
 
     currentWord.innerHTML =
@@ -864,10 +978,6 @@ function activateFinger(
         "visible"
     );
 
-
-    /*
-        Restart the pop animation.
-    */
 
     currentWord.classList.remove(
         "pop"
@@ -883,12 +993,14 @@ function activateFinger(
 
 
     /*
-        Optional speech.
+        Speak if enabled.
     */
 
     if (voiceEnabled) {
 
-        speakWord(word);
+        speakWord(
+            word
+        );
 
     }
 
@@ -962,10 +1074,12 @@ function escapeHTML(value) {
 
 
 // =====================================================
-// TEXT TO SPEECH
+// SPEECH
 // =====================================================
 
-function speakWord(word) {
+function speakWord(
+    word
+) {
 
     if (
         !("speechSynthesis" in window)
@@ -985,9 +1099,12 @@ function speakWord(word) {
         );
 
 
-    utterance.rate = 0.95;
+    utterance.rate =
+        0.95;
 
-    utterance.pitch = 1.05;
+
+    utterance.pitch =
+        1.05;
 
 
     window.speechSynthesis.speak(
@@ -998,7 +1115,7 @@ function speakWord(word) {
 
 
 // =====================================================
-// RESET BUTTON
+// RESET
 // =====================================================
 
 resetButton.addEventListener(
@@ -1016,17 +1133,18 @@ resetButton.addEventListener(
         );
 
 
-        /*
-            Reset finger states.
-        */
-
         for (
-            const finger
-            of Object.keys(fingerState)
+            const state
+            of Object.values(
+                fingerState
+            )
         ) {
 
-            fingerState[finger] =
+            state.touching =
                 false;
+
+            state.frames =
+                0;
 
         }
 
@@ -1062,7 +1180,7 @@ speakButton.addEventListener(
 
 
 // =====================================================
-// MAIN CAMERA LOOP
+// MAIN LOOP
 // =====================================================
 
 async function predict() {
@@ -1082,13 +1200,14 @@ async function predict() {
 
 
     /*
-        Make the canvas exactly
-        the same size as the video.
+        Match canvas to video.
     */
 
     if (
-        canvas.width !== video.videoWidth ||
-        canvas.height !== video.videoHeight
+        canvas.width !==
+            video.videoWidth ||
+        canvas.height !==
+            video.videoHeight
     ) {
 
         canvas.width =
@@ -1113,7 +1232,7 @@ async function predict() {
 
 
     /*
-        Only process a new video frame.
+        Process only new frames.
     */
 
     if (
@@ -1132,10 +1251,6 @@ async function predict() {
             );
 
 
-        /*
-            Did MediaPipe find a hand?
-        */
-
         if (
             results.landmarks &&
             results.landmarks.length > 0
@@ -1149,28 +1264,28 @@ async function predict() {
 
         else {
 
-            /*
-                No hand detected.
-            */
-
             currentWord.classList.remove(
                 "visible"
             );
 
 
             /*
-                Reset finger states so
-                the next touch counts
-                as a new activation.
+                Reset states when hand
+                disappears.
             */
 
             for (
-                const finger
-                of Object.keys(fingerState)
+                const state
+                of Object.values(
+                    fingerState
+                )
             ) {
 
-                fingerState[finger] =
+                state.touching =
                     false;
+
+                state.frames =
+                    0;
 
             }
 
@@ -1187,7 +1302,7 @@ async function predict() {
 
 
 // =====================================================
-// START EVERYTHING
+// START
 // =====================================================
 
 initialize();
