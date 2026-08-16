@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    >
+
+    <meta
+        name="description"
+        content="A customizable finger word camera."
+    >
+
+    <title>Finger Words ✋</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <main class="app">
+
+        <!-- HEADER -->
+
+        <header class="header">
+
+            <div>
+                <div class="eyebrow">
+                    HAND • WORD • CAMERA
+                </div>
+
+                <h1>Finger Words</h1>
+
+                <p>
+                    Touch a finger to your thumb to choose its word.
+                </p>
+            </div>
+
+            <button
+                id="resetButton"
+                class="reset-button"
+            >
+                Reset
+            </button>
+
+        </header>
+
+
+        <!-- CAMERA -->
+
+        <section class="camera-section">
+
+            <div
+                id="cameraContainer"
+                class="camera-container"
+            >
+
+                <video
+                    id="webcam"
+                    autoplay
+                    playsinline
+                    muted
+                ></video>
+
+                <canvas id="overlay"></canvas>
+
+
+                <!-- Camera loading message -->
+
+                <div
+                    id="cameraMessage"
+                    class="camera-message"
+                >
+
+                    <div class="loader"></div>
+
+                    <p>
+                        Starting camera…
+                    </p>
+
+                </div>
+
+
+                <!-- Currently activated word -->
+
+                <div
+                    id="currentWord"
+                    class="current-word"
+                >
+                    <span>
+                        Touch a finger
+                    </span>
+                </div>
+
+            </div>
+
+
+            <!-- SENTENCE -->
+
+            <div class="sentence-container">
+
+                <div class="sentence-label">
+                    YOUR PHRASE
+                </div>
+
+                <div
+                    id="sentence"
+                    class="sentence"
+                >
+
+                    <span class="placeholder">
+                        Your words will appear here
+                    </span>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- CUSTOMIZATION -->
+
+        <section class="settings">
+
+            <div class="settings-header">
+
+                <div>
+
+                    <div class="eyebrow">
+                        CUSTOMIZE
+                    </div>
+
+                    <h2>
+                        Your words
+                    </h2>
+
+                </div>
+
+
+                <button
+                    id="speakButton"
+                    class="speak-button"
+                >
+                    🔊 Voice: Off
+                </button>
+
+            </div>
+
+
+            <div class="finger-grid">
+
+
+                <!-- INDEX -->
+
+                <div class="finger-card">
+
+                    <div class="finger-icon">
+                        ☝️
+                    </div>
+
+                    <div class="finger-info">
+
+                        <span class="finger-name">
+                            Index
+                        </span>
+
+                        <input
+                            id="indexInput"
+                            class="word-input"
+                            type="text"
+                            value="I"
+                            maxlength="30"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- MIDDLE -->
+
+                <div class="finger-card">
+
+                    <div class="finger-icon">
+                        🖕
+                    </div>
+
+                    <div class="finger-info">
+
+                        <span class="finger-name">
+                            Middle
+                        </span>
+
+                        <input
+                            id="middleInput"
+                            class="word-input"
+                            type="text"
+                            value="love"
+                            maxlength="30"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- RING -->
+
+                <div class="finger-card">
+
+                    <div class="finger-icon">
+                        💍
+                    </div>
+
+                    <div class="finger-info">
+
+                        <span class="finger-name">
+                            Ring
+                        </span>
+
+                        <input
+                            id="ringInput"
+                            class="word-input"
+                            type="text"
+                            value="bunnies"
+                            maxlength="30"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- PINKY -->
+
+                <div class="finger-card">
+
+                    <div class="finger-icon">
+                        🤙
+                    </div>
+
+                    <div class="finger-info">
+
+                        <span class="finger-name">
+                            Pinky
+                        </span>
+
+                        <input
+                            id="pinkyInput"
+                            class="word-input"
+                            type="text"
+                            value="so much"
+                            maxlength="30"
+                        >
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- INSTRUCTIONS -->
+
+            <div class="instructions">
+
+                <div class="instruction">
+
+                    <span>
+                        1
+                    </span>
+
+                    <p>
+                        Show your hand to the camera.
+                    </p>
+
+                </div>
+
+
+                <div class="instruction">
+
+                    <span>
+                        2
+                    </span>
+
+                    <p>
+                        Touch a fingertip to your thumb.
+                    </p>
+
+                </div>
+
+
+                <div class="instruction">
+
+                    <span>
+                        3
+                    </span>
+
+                    <p>
+                        Touch fingers in order to build a phrase.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- FOOTER -->
+
+        <footer>
+
+            Finger Words · Made with MediaPipe
+
+        </footer>
+
+    </main>
+
+
+    <!-- JavaScript -->
+
+    <script
+        type="module"
+        src="script.js"
+    ></script>
+
+</body>
+</html>
