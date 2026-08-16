@@ -1,0 +1,691 @@
+* {
+    box-sizing: border-box;
+}
+
+:root {
+    --background: #f7f5f2;
+    --card: #ffffff;
+    --text: #1e1d1b;
+    --muted: #817c76;
+    --border: #e7e3de;
+    --accent: #ff6f91;
+    --accent-dark: #e85377;
+}
+
+html {
+    min-height: 100%;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+
+    background:
+        radial-gradient(
+            circle at 10% 10%,
+            rgba(255, 207, 220, 0.45),
+            transparent 30%
+        ),
+        radial-gradient(
+            circle at 90% 20%,
+            rgba(211, 225, 255, 0.5),
+            transparent 30%
+        ),
+        var(--background);
+
+    color: var(--text);
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "SF Pro Display",
+        "Segoe UI",
+        sans-serif;
+}
+
+button,
+input {
+    font: inherit;
+}
+
+/* =========================
+   MAIN APP
+   ========================= */
+
+.app {
+    width: min(1100px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 42px 0 50px;
+}
+
+/* =========================
+   HEADER
+   ========================= */
+
+.header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+
+    gap: 20px;
+    margin-bottom: 28px;
+}
+
+.eyebrow {
+    font-size: 11px;
+    font-weight: 800;
+
+    letter-spacing: 0.15em;
+
+    color: var(--muted);
+
+    margin-bottom: 7px;
+}
+
+h1 {
+    margin: 0;
+
+    font-size: clamp(38px, 6vw, 64px);
+
+    letter-spacing: -0.055em;
+
+    line-height: 0.95;
+}
+
+.header p {
+    margin: 14px 0 0;
+
+    color: var(--muted);
+
+    font-size: 15px;
+}
+
+.reset-button {
+    border: 1px solid var(--border);
+
+    background: white;
+
+    border-radius: 999px;
+
+    padding: 10px 17px;
+
+    cursor: pointer;
+
+    font-weight: 600;
+
+    transition:
+        transform 0.2s,
+        box-shadow 0.2s;
+}
+
+.reset-button:hover {
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* =========================
+   CAMERA
+   ========================= */
+
+.camera-container {
+    position: relative;
+
+    width: 100%;
+
+    aspect-ratio: 16 / 10;
+
+    overflow: hidden;
+
+    border-radius: 28px;
+
+    background: #151515;
+
+    box-shadow:
+        0 25px 70px rgba(0, 0, 0, 0.16);
+}
+
+#webcam {
+    position: absolute;
+
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+
+    transform: scaleX(-1);
+}
+
+#overlay {
+    position: absolute;
+
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    pointer-events: none;
+
+    transform: scaleX(-1);
+}
+
+/* =========================
+   CAMERA LOADING MESSAGE
+   ========================= */
+
+.camera-message {
+    position: absolute;
+
+    inset: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: center;
+
+    align-items: center;
+
+    color: white;
+
+    background:
+        rgba(20, 20, 20, 0.55);
+
+    backdrop-filter: blur(10px);
+
+    z-index: 5;
+
+    transition: opacity 0.4s;
+}
+
+.camera-message.hidden {
+    opacity: 0;
+
+    pointer-events: none;
+}
+
+.camera-message p {
+    margin-top: 16px;
+
+    font-size: 14px;
+}
+
+.loader {
+    width: 32px;
+
+    height: 32px;
+
+    border-radius: 50%;
+
+    border:
+        3px solid rgba(255, 255, 255, 0.25);
+
+    border-top-color: white;
+
+    animation:
+        spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* =========================
+   CURRENT WORD
+   ========================= */
+
+.current-word {
+    position: absolute;
+
+    left: 50%;
+    bottom: 24px;
+
+    transform:
+        translateX(-50%)
+        translateY(5px);
+
+    z-index: 4;
+
+    min-width: 170px;
+
+    padding: 12px 22px;
+
+    border-radius: 999px;
+
+    background:
+        rgba(255, 255, 255, 0.93);
+
+    backdrop-filter: blur(12px);
+
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.18);
+
+    text-align: center;
+
+    font-size: 18px;
+
+    font-weight: 750;
+
+    opacity: 0;
+
+    transition:
+        opacity 0.2s,
+        transform 0.2s;
+}
+
+.current-word.visible {
+    opacity: 1;
+
+    transform:
+        translateX(-50%)
+        translateY(0);
+}
+
+.current-word.pop {
+    animation:
+        wordPop 0.45s ease;
+}
+
+@keyframes wordPop {
+
+    0% {
+        transform:
+            translateX(-50%)
+            scale(0.8);
+    }
+
+    55% {
+        transform:
+            translateX(-50%)
+            scale(1.08);
+    }
+
+    100% {
+        transform:
+            translateX(-50%)
+            scale(1);
+    }
+}
+
+/* =========================
+   SENTENCE
+   ========================= */
+
+.sentence-container {
+    margin-top: 18px;
+
+    padding: 20px 24px;
+
+    background: white;
+
+    border:
+        1px solid var(--border);
+
+    border-radius: 20px;
+}
+
+.sentence-label {
+    font-size: 10px;
+
+    font-weight: 800;
+
+    letter-spacing: 0.13em;
+
+    color: var(--muted);
+
+    margin-bottom: 8px;
+}
+
+.sentence {
+    min-height: 32px;
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    align-items: center;
+
+    gap: 7px;
+
+    font-size: 21px;
+
+    font-weight: 650;
+}
+
+.placeholder {
+    color: #b4afa9;
+
+    font-weight: 450;
+
+    font-size: 16px;
+}
+
+.word-chip {
+    display: inline-flex;
+
+    align-items: center;
+
+    padding: 5px 12px;
+
+    border-radius: 999px;
+
+    background: #f3f0ed;
+
+    animation:
+        chipIn 0.35s ease both;
+}
+
+@keyframes chipIn {
+
+    from {
+        opacity: 0;
+
+        transform:
+            translateY(7px)
+            scale(0.9);
+    }
+
+    to {
+        opacity: 1;
+
+        transform:
+            translateY(0)
+            scale(1);
+    }
+}
+
+/* =========================
+   SETTINGS
+   ========================= */
+
+.settings {
+    margin-top: 28px;
+
+    padding: 28px;
+
+    background: white;
+
+    border:
+        1px solid var(--border);
+
+    border-radius: 26px;
+}
+
+.settings-header {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 22px;
+}
+
+h2 {
+    margin: 0;
+
+    font-size: 27px;
+
+    letter-spacing: -0.03em;
+}
+
+.speak-button {
+    border:
+        1px solid var(--border);
+
+    background: white;
+
+    border-radius: 999px;
+
+    padding: 9px 14px;
+
+    cursor: pointer;
+
+    font-size: 13px;
+
+    font-weight: 650;
+
+    transition: 0.2s;
+}
+
+.speak-button.active {
+    background: #1f1f1f;
+
+    color: white;
+
+    border-color: #1f1f1f;
+}
+
+/* =========================
+   FINGER CARDS
+   ========================= */
+
+.finger-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 12px;
+}
+
+.finger-card {
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 15px;
+
+    border:
+        1px solid var(--border);
+
+    border-radius: 17px;
+
+    transition:
+        border-color 0.2s,
+        transform 0.2s;
+}
+
+.finger-card:focus-within {
+    border-color: #bbb4ad;
+
+    transform: translateY(-2px);
+}
+
+.finger-icon {
+    width: 40px;
+
+    height: 40px;
+
+    display: grid;
+
+    place-items: center;
+
+    font-size: 22px;
+
+    background: #f5f2ef;
+
+    border-radius: 12px;
+
+    flex-shrink: 0;
+}
+
+.finger-info {
+    min-width: 0;
+
+    width: 100%;
+}
+
+.finger-name {
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: var(--muted);
+
+    font-size: 11px;
+
+    font-weight: 750;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.08em;
+}
+
+.word-input {
+    width: 100%;
+
+    border: none;
+
+    outline: none;
+
+    padding: 0;
+
+    background: transparent;
+
+    color: var(--text);
+
+    font-weight: 650;
+
+    font-size: 16px;
+}
+
+/* =========================
+   INSTRUCTIONS
+   ========================= */
+
+.instructions {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 12px;
+
+    margin-top: 24px;
+
+    padding-top: 22px;
+
+    border-top:
+        1px solid var(--border);
+}
+
+.instruction {
+    display: flex;
+
+    gap: 10px;
+
+    align-items: flex-start;
+}
+
+.instruction span {
+    width: 25px;
+
+    height: 25px;
+
+    display: grid;
+
+    place-items: center;
+
+    flex-shrink: 0;
+
+    border-radius: 50%;
+
+    background: #f1eeeb;
+
+    font-size: 11px;
+
+    font-weight: 800;
+}
+
+.instruction p {
+    margin: 2px 0 0;
+
+    color: var(--muted);
+
+    font-size: 13px;
+
+    line-height: 1.45;
+}
+
+/* =========================
+   FOOTER
+   ========================= */
+
+footer {
+    padding-top: 28px;
+
+    text-align: center;
+
+    color: var(--muted);
+
+    font-size: 11px;
+}
+
+/* =========================
+   TABLET / MOBILE
+   ========================= */
+
+@media (max-width: 800px) {
+
+    .app {
+        width:
+            min(
+                100% - 20px,
+                650px
+            );
+
+        padding-top: 25px;
+    }
+
+    .header {
+        align-items: flex-start;
+    }
+
+    .header p {
+        max-width: 300px;
+    }
+
+    .camera-container {
+        aspect-ratio: 3 / 4;
+
+        border-radius: 22px;
+    }
+
+    .finger-grid {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+    .instructions {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* =========================
+   SMALL PHONES
+   ========================= */
+
+@media (max-width: 450px) {
+
+    h1 {
+        font-size: 42px;
+    }
+
+    .settings {
+        padding: 20px;
+    }
+
+    .finger-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .speak-button {
+        font-size: 11px;
+    }
+}
